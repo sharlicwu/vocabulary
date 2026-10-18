@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>英文單字朗讀＋測驗系統</title>
+<style>
+  :root{
+    --g1:#7f1d1d; --g2:#dc2626; --g3:#f59e0b;
+    --brand:#b91c1c; --brand-dark:#7f1d1d; --gold:#f59e0b;
+    --bg:#f1f5f9; --card:#ffffff; --ink:#111827; --muted:#6b7280;
+    --line:#e5e7eb; --ok:#16a34a; --err:#dc2626; --warn:#d97706;
+    --r:20px; --sh:0 12px 34px rgba(17,24,39,.13);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:"PingFang TC","Microsoft JhengHei","Noto Sans TC",system-ui,-apple-system,"Segoe UI",sans-serif;
+    background:linear-gradient(150deg,var(--g1) 0%,var(--g2) 45%,var(--g3) 100%);
+    background-attachment:fixed;
+    color:var(--ink);min-height:100vh;line-height:1.6;
+    display:flex;justify-content:center;align-items:flex-start;padding:16px 12px 40px;
+  }
+  .app{width:100%;max-width:820px}
+
+  /* ---------- 卡片主體 ---------- */
+  .card{
+    background:var(--card);border-radius:var(--r);box-shadow:var(--sh);
+    overflow:hidden;display:flex;flex-direction:column;min-height:620px;
+  }
+  .bar{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:14px 18px;background:linear-gradient(135deg,var(--g1),var(--g2));color:#fff;
+  }
+  .bar .who{font-weight:700;font-size:.94rem;display:flex;align-items:center;gap:6px}
+  .bar .cnt{font-size:.82rem;opacity:.9;font-weight:600}
+  .home{
+    border:1px solid rgba(255,255,255,.55);background:rgba(255,255,255,.14);color:#fff;
+    border-radius:999px;padding:6px 13px;font-size:.82rem;font-weight:700;cursor:pointer;
+  }
+  .home:active{transform:scale(.95)}
+  .body{padding:20px 18px 24px;flex:1;display:flex;flex-direction:column}
+
+  /* ---------- 畫面切換 ---------- */
+  .screen{display:none;animation:fade .28s ease}
+  .screen.on{display:flex;flex-direction:column;flex:1}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+  /* ---------- 首頁 ---------- */
+  .hero{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:15px;text-align:center;padding:12px 0}
+  .badge{
+    background:linear-gradient(135deg,#fef3c7,#fde68a);color:#92400e;border:1px solid #fcd34d;
+    padding:7px 17px;border-radius:999px;font-size:.84rem;font-weight:800;letter-spacing:.5px
+  }
+  .hero h1{
+    font-size:clamp(1.5rem,5.4vw,2.15rem);line-height:1.25;font-weight:900;
+    background:linear-gradient(135deg,var(--g1),var(--g2) 55%,var(--g3));
+    -webkit-background-clip:text;background-clip:text;color:transparent;margin:0
+  }
+  .hero .sub{color:var(--muted);font-size:.92rem;margin:0}
+  .emoji-row{font-size:2.1rem;letter-spacing:4px}
+  input.name{
+    width:min(300px,100%);padding:14px 18px;font-size:1.05rem;font-weight:600;text-align:center;
+    border:2px solid var(--line);border-radius:14px;outline:none;background:#fff;color:var(--ink);
+    font-family:inherit
+  }
+  input.name:focus{border-color:var(--g2);box-shadow:0 0 0 4px rgba(220,38,38,.14)}
+  .acts{display:flex;flex-direction:column;gap:11px;width:min(340px,100%);margin-top:4px}
+  .btn{
+    border:none;border-radius:16px;padding:16px 18px;font-size:1.05rem;font-weight:800;
+    cursor:pointer;color:#fff;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:9px;
+    transition:transform .12s,box-shadow .2s
+  }
+  .btn:active{transform:scale(.97)}
+  .btn.b1{background:linear-gradient(135deg,var(--g1),var(--g2));box-shadow:0 6px 18px rgba(185,28,28,.34)}
+  .btn.b2{background:linear-gradient(135deg,#0f766e,#10b981);box-shadow:0 6px 18px rgba(16,185,129,.3)}
+  .btn.b3{background:linear-gradient(135deg,#a16207,var(--gold));box-shadow:0 6px 18px rgba(245,158,11,.32)}
+  .btn.ghost{background:#f8fafc;color:var(--brand-dark);border:2px solid var(--g2);box-shadow:none}
+  .btn.sm{padding:11px 16px;font-size:.92rem;border-radius:12px}
+  .tip{font-size:.8rem;color:var(--muted);margin-top:6px}
+
+  /* ---------- 聽力 ---------- */
+  .wgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:10px;overflow-y:auto;padding:2px}
+  .witem{
+    background:#f8fafc;border:2px solid var(--line);border-radius:14px;padding:11px 8px;
+    text-align:center;cursor:pointer;transition:.18s
+  }
+  .witem:active{transform:scale(.95)}
+  .witem:hover{border-color:var(--g2);background:#fff5f5}
+  .witem .ic{font-size:1.6rem;line-height:1.2}
+  .witem .en{font-weight:800;color:var(--brand-dark);font-size:.88rem;margin-top:3px;word-break:break-word}
+  .witem .zh{font-size:.76rem;color:var(--muted)}
+  .witem .snd{margin-top:5px;font-size:.72rem;color:var(--g2);font-weight:700}
+
+  /* ---------- 單字卡 ---------- */
+  .wc{text-align:center;padding:6px 0 2px}
+  .wc .ic{font-size:3.1rem;line-height:1.1}
+  .wc .w{font-size:clamp(1.4rem,6vw,1.95rem);font-weight:900;color:var(--brand-dark);margin:6px 0 2px;word-break:break-word}
+  .wc .z{font-size:1.05rem;font-weight:700;color:var(--muted)}
+  .sent{
+    background:#f8fafc;border-left:6px solid var(--g2);border-radius:12px;
+    padding:14px 16px;margin:14px 0 4px;text-align:left
+  }
+  .sent .en{font-size:.97rem;font-weight:600;color:#0f172a}
+  .sent .zh{font-size:.86rem;color:#475569;margin-top:5px}
+  mark{background:linear-gradient(180deg,transparent 58%,#fde68a 58%);color:var(--brand-dark);font-weight:800;padding:0 2px}
+  .row{display:flex;gap:9px;flex-wrap:wrap;justify-content:center;margin:12px 0}
+
+  /* ---------- 錄音 ---------- */
+  .recbox{background:#f0fdf4;border:2px solid #bbf7d0;border-radius:14px;padding:13px;margin-top:12px;text-align:center}
+  .recbox.live{background:#fef2f2;border-color:#fecaca}
+  .recdot{display:none;align-items:center;gap:7px;justify-content:center;color:var(--err);font-weight:800;font-size:.88rem;margin-bottom:9px}
+  .recbox.live .recdot{display:flex}
+  .recdot i{width:10px;height:10px;border-radius:50%;background:var(--err);animation:blink .9s infinite}
+  @keyframes blink{50%{opacity:.25}}
+  .bigrec{
+    width:100%;max-width:300px;border:none;border-radius:16px;padding:15px;font-size:1.05rem;font-weight:800;
+    color:#fff;background:linear-gradient(135deg,#15803d,var(--ok));cursor:pointer;font-family:inherit
+  }
+  .bigrec.stop{background:linear-gradient(135deg,#b91c1c,var(--err))}
+  .bigrec:active{transform:scale(.97)}
+  .status{min-height:20px;font-size:.86rem;font-weight:800;margin-top:9px}
+  audio{width:100%;max-width:360px;margin-top:8px;display:none}
+
+  /* ---------- 測驗 ---------- */
+  .pbar{height:9px;background:#e5e7eb;border-radius:99px;overflow:hidden;margin:2px 0 6px}
+  .pfill{height:100%;width:0;background:linear-gradient(90deg,var(--g1),var(--g2),var(--g3));transition:width .35s;border-radius:99px}
+  .pnum{text-align:center;font-size:.82rem;font-weight:700;color:var(--muted);margin-bottom:6px}
+  .qbox{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center}
+  .qword{font-size:clamp(1.7rem,8vw,2.5rem);font-weight:900;color:var(--brand-dark);word-break:break-word}
+  .qsub{font-size:.82rem;color:var(--muted)}
+  .opts{display:grid;grid-template-columns:1fr;gap:10px;width:100%;max-width:460px;margin-top:14px}
+  .opt{
+    background:#fff;border:2px solid var(--line);border-radius:14px;padding:15px 14px;
+    font-size:1.02rem;font-weight:700;cursor:pointer;color:var(--ink);font-family:inherit;transition:.16s
+  }
+  .opt:active{transform:scale(.97)}
+  .opt.ok{border-color:var(--ok);background:#f0fdf4;color:#15803d}
+  .opt.no{border-color:var(--err);background:#fef2f2;color:#b91c1c}
+  .result{text-align:center;display:none;flex-direction:column;align-items:center;gap:11px}
+  .result.on{display:flex}
+  .score{
+    font-size:4rem;font-weight:900;line-height:1;
+    background:linear-gradient(135deg,var(--g1),var(--g2),var(--g3));
+    -webkit-background-clip:text;background-clip:text;color:transparent
+  }
+  .wronglist{width:100%;max-width:460px;text-align:left;background:#fff7ed;border:2px solid #fed7aa;border-radius:14px;padding:12px 14px}
+  .wronglist h3{margin:0 0 7px;font-size:.95rem;color:#9a3412}
+  .wronglist li{font-size:.9rem;margin:3px 0;color:#7c2d12}
+  .wronglist ul{margin:0;padding-left:19px}
+
+  .foot{text-align:center;font-size:.74rem;color:var(--muted);padding:12px 8px 0}
+  @media(min-width:620px){ .opts{grid-template-columns:1fr 1fr} .body{padding:24px 26px 28px} }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="card">
+
+    <!-- ============ 首頁 ============ -->
+    <section class="screen on" id="sHome">
+      <div class="body">
+        <div class="hero">
+          <div class="badge" id="badge">📚 藍思中級語音作業</div>
+          <div class="emoji-row" id="emojiRow">🏯🐉🧱⛰️</div>
+          <h1 id="topicTitle">Great Wall of China</h1>
+          <p class="sub">英文單字朗讀＋測驗系統</p>
+          <input class="name" id="nameInput" placeholder="請輸入你的姓名" autocomplete="off">
+          <div class="acts">
+            <button class="btn b1" id="btnListen">🎧 聽力練習</button>
+            <button class="btn b2" id="btnRecord">🎤 錄音作業</button>
+            <button class="btn b3" id="btnQuiz">📝 單字測驗</button>
+          </div>
+          <p class="tip">請先輸入姓名再開始。錄音功能需用 https（GitHub Pages）開啟才會有麥克風。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 聽力練習 ============ -->
+    <section class="screen" id="sListen">
+      <div class="bar">
+        <span class="who">🎧 聽力練習</span>
+        <div style="display:flex;align-items:center;gap:9px">
+          <span class="cnt" id="listenCnt"></span>
+          <button class="home" data-go="sHome">🏠 首頁</button>
+        </div>
+      </div>
+      <div class="body">
+        <div class="wgrid" id="wgrid"></div>
+        <div class="row">
+          <button class="btn b1 sm" id="btnListenAll">🔊 全部朗讀</button>
+          <button class="btn b2 sm" id="btnListenToRecord">🎤 去錄音作業</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 單字卡＋錄音 ============ -->
+    <section class="screen" id="sCard">
+      <div class="bar">
+        <span class="who" id="whoCard">學生：--</span>
+        <div style="display:flex;align-items:center;gap:9px">
+          <span class="cnt" id="cardCnt"></span>
+          <button class="home" data-go="sHome">🏠 首頁</button>
+        </div>
+      </div>
+      <div class="body">
+        <div class="wc">
+          <div class="ic" id="cIcon">🏯</div>
+          <div class="w" id="cWord">word</div>
+          <div class="z" id="cZh">中文</div>
+        </div>
+        <div class="sent">
+          <div class="en" id="cEn"></div>
+          <div class="zh" id="cZhSent"></div>
+        </div>
+        <div class="row">
+          <button class="btn b1 sm" id="btnSayWord">🔊 朗讀單字</button>
+          <button class="btn b3 sm" id="btnSaySent">🗣️ 朗讀例句</button>
+        </div>
+
+        <div class="recbox" id="recbox">
+          <div class="recdot"><i></i>錄音中…唸完按「停止並上傳」</div>
+          <button class="bigrec" id="btnRec">🎤 開始錄音</button>
+          <div class="status" id="recStatus"></div>
+          <audio id="preview" controls></audio>
+        </div>
+
+        <div class="row" style="margin-top:auto">
+          <button class="btn ghost sm" id="btnPrev">← 上一個</button>
+          <button class="btn ghost sm" id="btnNext">下一個 →</button>
+        </div>
+        <p class="tip" style="text-align:center">鍵盤 ← → 也可切換單字</p>
+      </div>
+    </section>
+
+    <!-- ============ 測驗 ============ -->
+    <section class="screen" id="sQuiz">
+      <div class="bar">
+        <span class="who" id="whoQuiz">學生：--</span>
+        <div style="display:flex;align-items:center;gap:9px">
+          <span class="cnt" id="quizCnt"></span>
+          <button class="home" data-go="sHome">🏠 首頁</button>
+        </div>
+      </div>
+      <div class="body">
+        <div id="quizPlay" style="flex:1;display:flex;flex-direction:column">
+          <div class="pbar"><div class="pfill" id="pfill"></div></div>
+          <div class="pnum" id="pnum"></div>
+          <div class="qbox">
+            <div class="qword" id="qWord">word</div>
+            <div class="qsub">🔊 聽發音後，選出正確的中文意思</div>
+            <button class="btn b1 sm" id="btnSayQuiz" style="margin-top:6px">🔊 發音</button>
+            <div class="opts" id="opts"></div>
+          </div>
+        </div>
+        <div class="result" id="result">
+          <div style="font-size:3.4rem">🏆</div>
+          <div class="score" id="scoreNum">0</div>
+          <div style="font-weight:800;color:var(--muted)" id="scoreTxt"></div>
+          <div class="status" id="quizStatus"></div>
+          <div class="wronglist" id="wrongBox" style="display:none">
+            <h3>📌 錯字清單（請再複習一次）</h3>
+            <ul id="wrongList"></ul>
+          </div>
+          <div class="row">
+            <button class="btn b3 sm" id="btnQuizAgain">🔄 再測驗一次</button>
+            <button class="btn ghost sm" data-go="sHome">🏠 回首頁</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+  <p class="foot" id="foot">單字朗讀＋測驗自動上傳系統</p>
+</div>
+
+<script>
+/* =====================================================================
+   ① 設定常數：部署後只需要改 scriptURL 這一行
+   ===================================================================== */
+const scriptURL = 'https://script.google.com/macros/s/AKfycbwFX8emkI0EYAB8p2kYmYwRkBg0i-yA2iMwFyZ6VsMjCiiopwXqLRMduYryDhc240SJzg/exec';
+const TOPIC      = 'Great Wall of China';       // 主題（會寫進試算表）
+const REC_SHEET  = '藍思中級語音作業';           // 錄音回傳的試算表分頁
+const QUIZ_SHEET = '藍思中級單字成績';           // 測驗成績的試算表分頁
+const DRIVE_FOLDER = '';                        // Google Drive 資料夾 ID，空白＝存到根目錄
+
+/* =====================================================================
+   ② 單字資料（例句＝課本原文）
+   ===================================================================== */
+const WORDS = [
+  { w:"twist and turn",  z:"蜿蜒曲折",        ic:"🌀", en:"The longest wall in the world <mark>twists and turns</mark> across the continent of Asia.",                      zh:"世界上最長的牆蜿蜒曲折地橫跨亞洲大洲。", raw:"The longest wall in the world twists and turns across the continent of Asia." },
+  { w:"continent",       z:"大洲",             ic:"🌏", en:"The longest wall in the world twists and turns across the <mark>continent</mark> of Asia.",                             zh:"世界上最長的牆蜿蜒曲折地橫跨亞洲大洲。", raw:"The longest wall in the world twists and turns across the continent of Asia." },
+  { w:"protect",         z:"保護",             ic:"🛡️", en:"The Great Wall was built long ago to <mark>protect</mark> Chinese people from outsiders.",                                 zh:"長城是很久以前為了保護中國人民免受外人侵襲而建造的。", raw:"The Great Wall was built long ago to protect Chinese people from outsiders." },
+  { w:"curved",          z:"彎曲的",           ic:"🌙", en:"The wall is <mark>curved</mark> instead of straight to flow in harmony with the land.",                                           zh:"城牆是彎曲的而不是筆直的，為了與土地和諧地融合。", raw:"The wall is curved instead of straight to flow in harmony with the land." },
+  { w:"harmony",         z:"和諧",             ic:"☯️", en:"The wall is curved instead of straight to flow in <mark>harmony</mark> with the land.",                                          zh:"城牆是彎曲的而不是筆直的，為了與土地和諧地融合。", raw:"The wall is curved instead of straight to flow in harmony with the land." },
+  { w:"passes through",  z:"穿過；經過",       ic:"🐉", en:"The dragon's body <mark>passes through</mark> many different types of land, including deserts, mountains, farmland, and beaches.", zh:"龍的身體穿過許多不同的地形，包括沙漠、山脈、農田和海灘。", raw:"The dragon's body passes through many different types of land, including deserts, mountains, farmland, and beaches." },
+  { w:"fallen apart",    z:"崩塌；瓦解",       ic:"🧱", en:"Some sections have broken and been fixed. Other sections have <mark>fallen apart</mark>.",                                       zh:"有些部分已經破損並被修好，其他部分則已經崩塌。", raw:"Some sections have broken and been fixed. Other sections have fallen apart." },
+  { w:"frame",           z:"框架",             ic:"🖼️", en:"Workers set up a <mark>frame</mark> made of wood or bamboo.",                                                                     zh:"工人搭起一個由木頭或竹子做成的框架。", raw:"Workers set up a frame made of wood or bamboo." },
+  { w:"layer",           z:"層",               ic:"🥧", en:"Next, they poured a <mark>layer</mark> of earth inside.",                                                                        zh:"接著，他們在裡面倒入一層泥土。", raw:"Next, they poured a layer of earth inside." },
+  { w:"earth",           z:"泥土",             ic:"🟤", en:"Workers built a frame and pounded it full of <mark>earth</mark>.",                                                            zh:"工人搭起框架，並把它填滿泥土。", raw:"Workers built a frame and pounded it full of earth." },
+  { w:"packed down",     z:"壓實；踩實",       ic:"👣", en:"Workers <mark>packed down</mark> the earth.",                                                                                   zh:"工人把泥土踩實。", raw:"Workers packed down the earth." },
+  { w:"enemies",         z:"敵人",             ic:"⚔️", en:"The Great Wall helped protect Chinese people from their <mark>enemies</mark> for many years.",                                 zh:"長城多年來幫助保護中國人民免受敵人的侵害。", raw:"The Great Wall helped protect Chinese people from their enemies for many years." },
+  { w:"wandered",        z:"遊蕩；漫遊",       ic:"🥾", en:"At first, the enemies were small groups of people who <mark>wandered</mark> from place to place.",                              zh:"起初，敵人是一些四處遊蕩的小團體。", raw:"At first, the enemies were small groups of people who wandered from place to place." },
+  { w:"mighty",          z:"強大的；長得驚人的", ic:"💪", en:"The wall would stretch from the North Pole to the South Pole. That's a <mark>mighty</mark> long wall!",                     zh:"城牆會從北極延伸到南極。那是一道長得驚人的城牆！", raw:"The wall would stretch from the North Pole to the South Pole. That's a mighty long wall!" }
+];
+
+/* =====================================================================
+   ③ 系統程式
+   ===================================================================== */
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+let student = '', idx = 0, stream = null, rec = null, chunks = [], upNo = 0;
+let qList = [], qAt = 0, qRight = 0, qWrong = [], locked = false;
+
+/* ---- 畫面切換 ---- */
+function show(id){
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('on'));
+  $(id).classList.add('on');
+}
+document.querySelectorAll('[data-go]').forEach(b =>
+  b.addEventListener('click', () => { stopRec(); show(b.dataset.go); })
+);
+
+/* ---- 發音 ---- */
+function say(text, rate){
+  if(!('speechSynthesis' in window)) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'en-US'; u.rate = rate || .85;
+  speechSynthesis.speak(u);
+}
+
+/* ---- 檢查姓名 ---- */
+function needName(){
+  const v = $('nameInput').value.trim();
+  if(v) student = v;
+  if(!student){ alert('請先輸入你的姓名喔！'); $('nameInput').focus(); return false; }
+  return true;
+}
+
+/* ---- 首頁 ---- */
+function init(){
+  $('topicTitle').textContent = TOPIC;
+  $('listenCnt').textContent = WORDS.length + ' 個單字';
+  $('foot').textContent = TOPIC + ' · 英文單字朗讀＋測驗自動上傳系統';
+}
+
+/* ---- 聽力 ---- */
+function openListen(){
+  if(!needName()) return;
+  const g = $('wgrid'); g.innerHTML = '';
+  WORDS.forEach((o,i) => {
+    const d = document.createElement('div');
+    d.className = 'witem';
+    d.innerHTML = '<div class="ic">'+o.ic+'</div><div class="en">'+esc(o.w)+
+                  '</div><div class="zh">'+esc(o.z)+'</div><div class="snd">🔊 點我唸</div>';
+    d.addEventListener('click', () => say(o.w, .8));
+    g.appendChild(d);
+  });
+  show('sListen');
+}
+$('btnListen').addEventListener('click', openListen);
+
+$('btnListenAll').addEventListener('click', () => {
+  if(!('speechSynthesis' in window)) return;
+  speechSynthesis.cancel();
+  WORDS.forEach(o => {
+    const u = new SpeechSynthesisUtterance(o.w);
+    u.lang='en-US'; u.rate=.8; speechSynthesis.speak(u);
+  });
+});
+$('btnListenToRecord').addEventListener('click', () => openCard());
+
+/* ---- 單字卡 ---- */
+function openCard(){
+  if(!needName()) return;
+  getMic();
+  $('whoCard').textContent = '學生：' + student;
+  show('sCard');
+  draw(0, true);
+}
+$('btnRecord').addEventListener('click', openCard);
+
+function draw(i, speak){
+  idx = (i + WORDS.length) % WORDS.length;
+  const o = WORDS[idx];
+  $('cIcon').textContent = o.ic;
+  $('cWord').textContent = o.w;
+  $('cZh').textContent   = o.z;
+  $('cEn').innerHTML     = o.en;
+  $('cZhSent').textContent = o.zh;
+  $('cardCnt').textContent = (idx+1) + ' / ' + WORDS.length;
+  $('btnPrev').disabled = false; $('btnNext').disabled = false;
+  if(speak) say(o.w, .78);
+}
+$('btnSayWord').addEventListener('click', () => say(WORDS[idx].w, .78));
+$('btnSaySent').addEventListener('click', () => say(WORDS[idx].raw, .85));
+$('btnPrev').addEventListener('click', () => draw(idx-1, true));
+$('btnNext').addEventListener('click', () => draw(idx+1, true));
+document.addEventListener('keydown', e => {
+  if(!$('sCard').classList.contains('on')) return;
+  if(e.key === 'ArrowLeft')  { e.preventDefault(); draw(idx-1, true); }
+  if(e.key === 'ArrowRight') { e.preventDefault(); draw(idx+1, true); }
+});
+
+/* ---- 麥克風 ---- */
+async function getMic(){
+  if(stream) return true;
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({ audio:true });
+    return true;
+  }catch(e){
+    $('recStatus').innerHTML = '❌ 拿不到麥克風權限，請用 https (GitHub Pages) 開啟並允許麥克風';
+    return false;
+  }
+}
+
+/* ---- 錄音 ---- */
+async function toggleRec(){
+  if(!rec || rec.state === 'inactive'){
+    if(!await getMic()) return;
+    chunks = [];
+    rec = new MediaRecorder(stream);
+    rec.ondataavailable = e => chunks.push(e.data);
+    rec.onstop = upload;
+    rec.start();
+    $('btnRec').textContent = '⏹️ 停止並上傳';
+    $('btnRec').classList.add('stop');
+    $('recbox').classList.add('live');
+    $('preview').style.display = 'none';
+    $('recStatus').textContent = '⏳ 錄音中…';
+  }else{
+    rec.stop();
+  }
+}
+function stopRec(){ if(rec && rec.state === 'recording') rec.stop(); }
+$('btnRec').addEventListener('click', toggleRec);
+
+function upload(){
+  const blob = new Blob(chunks, { type:'audio/webm' });
+  const pv = $('preview');
+  pv.src = URL.createObjectURL(blob); pv.style.display = 'block';
+
+  $('btnRec').textContent = '🎤 開始錄音';
+  $('btnRec').classList.remove('stop');
+  $('recbox').classList.remove('live');
+  $('recStatus').innerHTML = '⏫ 上傳中…';
+
+  const o = WORDS[idx];
+  upNo++;
+  const safe = o.w.replace(/[^a-z0-9]+/gi, '_');
+  const file = student + '_' + safe + '_' + upNo + '.webm';
+
+  const fr = new FileReader();
+  fr.onloadend = () => post({
+    action:'record', topic:TOPIC, studentName:student, word:o.w, zh:o.z,
+    sentence:o.raw, audio:String(fr.result).split(',')[1], mimeType:'audio/webm',
+    filename:file, recordingSheet:REC_SHEET, quizSheet:QUIZ_SHEET, driveFolder:DRIVE_FOLDER
+  }, ok => {
+    $('recStatus').innerHTML = ok ? '✅ 錄音已成功上傳！' : '❌ 上傳失敗，請檢查 scriptURL 是否已貼上';
+    if(ok) upNo--;
+  });
+  fr.readAsDataURL(blob);
+}
+
+/* ---- 測驗 ---- */
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.random()*(i+1)|0; [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+function openQuiz(){
+  if(!needName()) return;
+  stopRec();
+  qList = shuffle([...WORDS]);
+  qAt = 0; qRight = 0; qWrong = [];
+  $('whoQuiz').textContent = '學生：' + student;
+  $('quizPlay').style.display = 'flex';
+  $('result').classList.remove('on');
+  show('sQuiz');
+  ask();
+}
+$('btnQuiz').addEventListener('click', openQuiz);
+$('btnQuizAgain').addEventListener('click', openQuiz);
+
+function ask(){
+  locked = false;
+  const q = qList[qAt], total = qList.length;
+  $('quizCnt').textContent = (qAt+1) + ' / ' + total + ' 題';
+  $('pnum').textContent = '第 ' + (qAt+1) + ' 題，共 ' + total + ' 題';
+  $('pfill').style.width = (qAt/total*100) + '%';
+  $('qWord').textContent = q.w;
+  say(q.w, .78);
+
+  const others = shuffle(WORDS.filter(o => o.z !== q.z)).slice(0,3).map(o => o.z);
+  const box = $('opts'); box.innerHTML = '';
+  shuffle([q.z, ...others]).forEach(txt => {
+    const b = document.createElement('button');
+    b.className = 'opt'; b.textContent = txt;
+    b.addEventListener('click', () => answer(b, txt, q));
+    box.appendChild(b);
+  });
+}
+$('btnSayQuiz').addEventListener('click', () => say(qList[qAt].w, .78));
+
+function answer(btn, pick, q){
+  if(locked) return;
+  locked = true;
+  const good = pick === q.z;
+  document.querySelectorAll('.opt').forEach(b => {
+    b.style.cursor = 'default';
+    if(b.textContent === q.z) b.classList.add('ok');
+  });
+  if(good){ btn.classList.add('ok'); qRight++; }
+  else{ btn.classList.add('no'); qWrong.push({ w:q.w, z:q.z, pick:pick }); }
+
+  setTimeout(() => {
+    qAt++;
+    if(qAt < qList.length) ask();
+    else finish();
+  }, 900);
+}
+
+function finish(){
+  const total = qList.length, pct = Math.round(qRight/total*100);
+  $('quizPlay').style.display = 'none';
+  $('result').classList.add('on');
+  $('scoreNum').textContent = pct;
+  $('scoreTxt').textContent = '答對 ' + qRight + ' / ' + total + ' 題';
+
+  if(qWrong.length){
+    $('wrongBox').style.display = 'block';
+    $('wrongList').innerHTML = qWrong
+      .map(x => '<li><b>' + esc(x.w) + '</b> — 正確：' + esc(x.z) + '（你選：' + esc(x.pick) + '）</li>')
+      .join('');
+  }else{
+    $('wrongBox').style.display = 'none';
+  }
+
+  $('quizStatus').innerHTML = '⏫ 成績上傳中…';
+  post({
+    action:'quiz', topic:TOPIC, studentName:student, score:qRight, total:total,
+    percent:pct, wrong:qWrong.map(x => x.w + '→' + x.pick).join(' | '),
+    recordingSheet:REC_SHEET, quizSheet:QUIZ_SHEET, driveFolder:DRIVE_FOLDER
+  }, ok => {
+    $('quizStatus').innerHTML = ok ? '✅ 成績已成功上傳！' : '❌ 上傳失敗，請檢查 scriptURL 是否已貼上';
+  });
+}
+
+/* ---- 送出 ---- */
+function post(payload, cb){
+  if(!scriptURL || scriptURL.indexOf('PASTE_') === 0){
+    cb(false); console.warn('scriptURL 尚未設定'); return;
+  }
+  fetch(scriptURL, {
+    method:'POST',
+    headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload)
+  })
+  .then(r => r.json())
+  .then(d => cb(!!(d && d.ok)))
+  .catch(e => { console.error(e); cb(false); });
+}
+
+init();
+</script>
+</body>
+</html>
